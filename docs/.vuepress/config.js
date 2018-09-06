@@ -6,6 +6,7 @@ module.exports = {
   themeConfig: {
     repo: 'athena0304/notebook',
     nav: [
+      { text: '教程笔记', link: '/tutorial/' },
       { text: '专题', link: '/subject/' },
       { text: '基础', link: '/basic/' },
       { text: '题', link: '/question/' }
@@ -13,13 +14,20 @@ module.exports = {
     sidebar: {
       '/subject/': [
         '',
-        'throttle-debouce'
+        'throttle-debouce',
+        'examples'
       ],
       '/basic/': [
         ''
       ],
       '/question/': [
         ''
+      ],
+      '/tutorial/': [
+        '',
+        'modern-tutorial-part1',
+        'modern-tutorial-part2',
+        'modern-tutorial-part3'
       ]
     }
   }
