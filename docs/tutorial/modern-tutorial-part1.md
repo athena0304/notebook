@@ -296,3 +296,167 @@ alert( Array.from(str) ); // H,e,l,l,o
 如果一个函数被多次调用，那么每次调用都有自己的词法环境，其中有特定于该运行的局部变量和参数。
 
 #### 嵌套函数
+
+```js
+function makeCounter() {
+  let count = 0;
+
+  return function() {
+    return count++; // has access to the outer counter
+  };
+}
+
+let counter = makeCounter();
+
+alert( counter() ); // 0
+alert( counter() ); // 1
+alert( counter() ); // 2
+
+```
+
+![img](https://javascript.info/article/closure/lexical-search-order@2x.png)
+
+1. The locals of the nested function…
+2. The variables of the outer function…
+3. And so on until it reaches global variables.
+
+In this example `count` is found on step `2`. When an outer variable is modified, it’s changed where it’s found. So `count++` finds the outer variable and increases it in the Lexical Environment where it belongs. Like if we had `let count = 1`.
+
+they automatically remember where they were created using a hidden `[[Environment]]`property, and all of them can access outer variables.
+
+When on an interview, a frontend developer gets a question about “what’s a closure?”, a valid answer would be a definition of the closure and an explanation that all functions in JavaScript are closures, and maybe few more words about technical details: the `[[Environment]]` property and how Lexical Environments work.
+
+#### Code blocks and loops, IIFE
+
+上面讲的都是函数，词法环境也存在于块 `{...}`。
+
+##### if
+
+![img](https://javascript.info/article/closure/lexenv-if@2x.png)
+
+"if-only" 词法环境
+
+##### For, thile
+
+```js
+for (let i = 0; i < 10; i++) {
+  // Each loop has its own Lexical Environment
+  // {i: value}
+}
+
+alert(i); // Error, no such variable
+```
+
+##### Code blocks
+
+```js
+{
+  // do some job with local variables that should not be seen outside
+
+  let message = "Hello";
+
+  alert(message); // Hello
+}
+
+alert(message); // Error: message is not defined
+```
+
+##### IIFE
+
+immediately-invoked function expressions 立即调用函数表达式
+
+函数本身不能同时声明和调用，需要包裹一个圆括号，说明函数是在另一个表达式上下文中创建的，也就是说是一个函数表达式，这样就不需要名字也可以被直接调用。
+
+### 任务
+
+#### Filter through function
+
+
+数组中有个内建的 `arr.filter(f)` 方法。它通过函数 `f` 过滤元素。如果元素返回 `true` 的，那么该元素会被返回到结果数组中。
+
+制造一系列『马上能用』的过滤器：
+
+- `inBetween(a, b)` —— 在 `a` 和 `b` 之间或与它们相等（包括）。
+- `inArray([...])` —— 包含在给定的数组中。
+
+用法如下所示：
+
+- `arr.filter(inBetween(3,6))` —— 只挑选 3 和 6 之间的值。
+- `arr.filter(inArray([1,2,3]))` —— 只挑选与 `[1,2,3]` 其中成员匹配的元素。
+
+举个例子：
+
+``` js
+/* .. inBetween 和 inArray 的代码 */
+let arr = [1, 2, 3, 4, 5, 6, 7];
+alert( arr.filter(inBetween(3, 6)) ); // 3,4,5,6
+alert( arr.filter(inArray([1, 2, 10])) ); // 1,2
+```
+
+答：
+
+```js
+function inBetween(a, b) {
+  return function(x) {
+    return x >= a && x <= b;
+  };
+}
+
+let arr = [1, 2, 3, 4, 5, 6, 7];
+alert( arr.filter(inBetween(3, 6)) ); // 3,4,5,6
+
+```
+
+```js
+function inArray(arr) {
+  return function(x) {
+    return arr.includes(x);
+  };
+}
+
+let arr = [1, 2, 3, 4, 5, 6, 7];
+alert( arr.filter(inArray([1, 2, 10])) ); // 1,2
+```
+
+#### Sort by field
+
+
+我们有一组要排序的对象：
+
+```js
+let users = [
+  { name: "John", age: 20, surname: "Johnson" },
+  { name: "Pete", age: 18, surname: "Peterson" },
+  { name: "Ann", age: 19, surname: "Hathaway" }
+];
+```
+
+通常的做法应该是这样的：
+
+```js
+// 通过 name (Ann, John, Pete)
+users.sort((a, b) => a.name > b.name ? 1 : -1);
+
+// 通过 age (Pete, Ann, John)
+users.sort((a, b) => a.age > b.age ? 1 : -1);
+```
+
+我们可以让它更加简洁吗，比如这样？
+
+```js
+users.sort(byField('name'));
+users.sort(byField('age'));
+```
+
+那么，我们只需要写 `byField(fieldName)`，而不是写一个函数。
+
+编写可用于此目的的函数 `byField`。
+
+答：
+
+```js
+function byField(field) {
+  return (a, b) => a[field] > b[field] ? 1 : -1;
+}
+```
+

@@ -72,4 +72,47 @@ Array.from({length: 5}, (v, k) => k + 1).sort(() => 0.5 - Math.random())
 
 ## 3.实现add函数。可满足以下两种调用方式。有且只有两个参数。add(2, 5); // 7 add(2)(5); // 7
 
-这道题用到的是函数柯里化
+首先如果是 add(2)(5) 这种形式：
+
+```
+function add (a) {
+    return function (b) {
+        return a + b
+    }
+}
+```
+
+那么需要判断参数个数，如果个数是1，则执行上面的那个，如果个数多于1个，就执行普通的加法
+
+```js
+function add (...args) {
+  if (args.length > 1) {
+    return args.reduce((prev, cur) => prev + cur)
+  } else {
+    return function (b) {
+      return args[0] + b
+    }
+  }
+}
+console.log(add(2, 5))
+console.log(add(2)(5))
+```
+
+## 4.this相关<font colot=red>(待回顾)</font>
+
+```js
+var length = 10
+function fn () {
+  console.log(this.length)
+}
+var obj = {
+  length: 5,
+  method: function (fn) {
+    fn() // 10
+    arguments[0]() // 1
+  }
+}
+
+obj.method(fn)
+```
+
