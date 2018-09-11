@@ -156,7 +156,134 @@ Object.assign(dest[, src1, src2, src3...])
 
 有一个标准的深拷贝算法，解决上面和一些更复杂的情况，叫做 [Structured cloning algorithm](https://w3c.github.io/html/infrastructure.html#internal-structured-cloning-algorithm)。为了不重复造轮子，我们使用它的一个 JS 实现的库 [lodash](https://lodash.com), 方法名叫做 [_.cloneDeep(obj)](https://lodash.com/docs#cloneDeep)。
 
+### 任务
+
+#### 检查是否为空
+
+Write the function `isEmpty(obj)` which returns `true` if the object has no properties, `false` otherwise.
+
+```
+let schedule = {};
+
+alert( isEmpty(schedule) ); // true
+
+schedule["8:30"] = "get up";
+
+alert( isEmpty(schedule) ); // false
+```
+
+solution：
+
+```js
+function isEmpty(obj) {
+  for (let key in obj) {
+    return false;
+  }
+  return true;
+}
+```
+
+## 4.2 Garbage collection 垃圾回收
+
+### Reachability 可达性
+
+Javascript 中，内存管理的主要概念就是可达性。
+
+1. 有一些基本的的可达值，这些值明显不能被释放。
+
+   比方说：
+
+   - 当前函数的局部变量和参数。
+   - 嵌套调用时，当前调用链上所有函数的变量与参数。
+   - 全局变量。
+   - （还有一些内部的）
+
+   这些值被称作**根**。
+
+2. 如果一个值可以通过引用或引用链，从根值访问到，则认为这个值是可达的。
+
+在 JavaScript 引擎中有一个被称作[垃圾回收器](https://en.wikipedia.org/wiki/Garbage_collection_(computer_science))的东西在后台执行。它监控着所有对象的状态，并删除掉那些已经不可达的。
+
+### 内部算法
+
+The basic garbage collection algorithm is called “mark-and-sweep”.
+
+JavaScript engines apply many optimizations to make it run faster and not affect the execution.
+
+Some of the optimizations:
+
+- **Generational collection** – objects are split into two sets: “new ones” and “old ones”. Many objects appear, do their job and die fast, they can be cleaned up aggressively. Those that survive for long enough, become “old” and are examined less often.
+- **Incremental collection** – if there are many objects, and we try to walk and mark the whole object set at once, it may take some time and introduce visible delays in the execution. So the engine tries to split the garbage collection into pieces. Then the pieces are executed one by one, separately. That requires some extra bookkeeping between them to track changes, but we have many tiny delays instead of a big one.
+- **Idle-time collection** – the garbage collector tries to run only while the CPU is idle, to reduce the possible effect on the execution.
+
+## 4.3 Symbol
+
+对象的属性键只能是字符串或者是 Symbol。
+
+```js
+let id = Symbol();
+```
+
+Symbol 是唯一的：
+
+```js
+let id1 = Symbol("id");
+let id2 = Symbol("id");
+
+*!*
+alert(id1 == id2); // false
+*/!*
+```
+
+在对象字面量中使用：
+
+```js
+let id = Symbol("id");
+
+let user = {
+  name: "John",
+  [id]: 123 // 不仅仅是 "id：123"
+};
+```
+
+Symbol 属性不参与 `for...in` 循环。
+
+Object.assign 复制所有属性，包括字符串和 Symbol
+
+### 全局 Symbol
+
+全局 symbol 注册表 *global symbol registry*
+
+```js
+// 从全局注册表中读取
+let id = Symbol.for("id"); // 如果该 Symbol 不存在，则创建它
+
+// 再次读取
+let idAgain = Symbol.for("id");
+
+// 相同的 Symbol
+alert( id === idAgain ); // true
+```
+
+```js
+let sym = Symbol.for("name");
+let sym2 = Symbol.for("id");
+
+// 从 symbol 中获取 name
+alert( Symbol.keyFor(sym) ); // name
+alert( Symbol.keyFor(sym2) ); // id
+```
+
+### 系统 Symbol
+
+- `Symbol.hasInstance`
+- `Symbol.isConcatSpreadable`
+- `Symbol.iterator`
+- `Symbol.toPrimitive`
+- ...等等。
+
 ## 6.1 Recursion and stack
+
 Iterative：迭代
 
 Recursive： 递归
