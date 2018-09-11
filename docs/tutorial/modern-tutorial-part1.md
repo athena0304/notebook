@@ -68,6 +68,94 @@ function checkAge(age) {
 - A Function Declaration is usable in the whole script/code block.
 - When a Function Declaration is made within a code block, it is visible everywhere inside that block. But not outside of it.
 
+## 4.1 Object
+
+### 计算属性
+
+```js
+let fruit = prompt("Which fruit to buy?", "apple");
+
+let bag = {
+  [fruit]: 5, // the name of the property is taken from the variable fruit
+};
+
+alert( bag.apple ); // 5 if fruit="apple"
+```
+
+```js
+let fruit = 'apple';
+let bag = {
+  [fruit + 'Computers']: 5 // bag.appleComputers = 5
+};
+```
+
+### 属性值简写
+
+```js
+let user = {
+  name,  // same as name:name
+  age: 30
+};
+```
+
+### 检查是否存在
+
+可以用 `in` 操作符
+
+```js
+let user = { name: "John", age: 30 };
+
+alert( "age" in user ); // true, user.age exists
+alert( "blabla" in user ); // false, user.blabla doesn't exist
+
+let key = "age";
+alert( key in user ); // true, takes the name from key and checks for such property
+```
+
+如果存的就是 `undefined`：
+
+```js
+let obj = {
+  test: undefined
+};
+
+alert( obj.test ); // it's undefined, so - no such property?
+
+alert( "test" in obj ); // true, the property does exist!
+```
+
+### Ordered like an object
+
+如果对象属性是整数，则按照升序排列，其它则以创建时的顺序为准。
+
+如果不希望有整数属性排序的限制，在前面添加加号 `+` 即可。
+
+整数属性是指一个字符串能转成一个整数，又能原封不动的转换回来：
+
+```js
+/ Math.trunc is a built-in function that removes the decimal part
+alert( String(Math.trunc(Number("49"))) ); // "49", same, integer property
+alert( String(Math.trunc(Number("+49"))) ); // "49", not same "+49" ⇒ not integer property
+alert( String(Math.trunc(Number("1.2"))) ); // "1", not same "1.2" ⇒ not integer property
+```
+
+### 复制和合并，Object.assign
+
+我们也可以用[Object.assign](mdn:js/Object/assign) 来实现。
+
+语法是：
+
+```js
+Object.assign(dest[, src1, src2, src3...])
+```
+
+- 参数 `dest` 和 `src1, ..., srcN` （可以有很多个）是对象。
+- 这个方法复制了 `src1, ..., srcN` 的所有对象到 `dest`。换句话说，从第二个参数开始，所有对象的属性都复制给了第一个参数对象，然后返回 `dest`。
+
+
+
+有一个标准的深拷贝算法，解决上面和一些更复杂的情况，叫做 [Structured cloning algorithm](https://w3c.github.io/html/infrastructure.html#internal-structured-cloning-algorithm)。为了不重复造轮子，我们使用它的一个 JS 实现的库 [lodash](https://lodash.com), 方法名叫做 [_.cloneDeep(obj)](https://lodash.com/docs#cloneDeep)。
+
 ## 6.1 Recursion and stack
 Iterative：迭代
 
