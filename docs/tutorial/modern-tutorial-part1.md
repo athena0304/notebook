@@ -282,6 +282,248 @@ alert( Symbol.keyFor(sym2) ); // id
 - `Symbol.toPrimitive`
 - ...等等。
 
+## 4.4 Object methods, "this"
+
+```js
+// these objects do the same
+
+let user = {
+  sayHi: function() {
+    alert("Hello");
+  }
+};
+
+// method shorthand looks better, right?
+let user = {
+  sayHi() { // same as "sayHi: function()"
+    alert("Hello");
+  }
+};
+```
+
+### 内部：引用类型
+
+```js
+let user = {
+  name: "John",
+  hi() { alert(this.name); },
+  bye() { alert("Bye"); }
+};
+
+user.hi(); // John (the simple call works)
+
+// now let's call user.hi or user.bye depending on the name
+(user.name == "John" ? user.hi : user.bye)(); // Error!
+```
+
+This works (object dot method):
+
+```javascript
+user.hi();
+```
+
+This doesn’t (evaluated method):
+
+```javascript
+(user.name == "John" ? user.hi : user.bye)(); // Error!
+```
+
+**To make user.hi() calls work, JavaScript uses a trick – the dot '.' returns not a function, but a value of the special Reference Type.**
+
+引用类型的值是三点的结合 `(base, name, strict)`，如下：
+
+- `base` 是对象。
+- `name` 是属性。
+- 当 `use strict` 生效，`strict` 为真。
+
+`user.hi` 属性访问的值不是函数，而是引用类型的值。在严格模式下，`user.hi` 是：
+
+```
+// 引用类型值
+(user, "hi", true)
+```
+
+当在引用类型上用 `()` 调用时，它们接收到这个对象和它的方法的所有信息，并且设定正确的 `this` 值（这里等于 `user`）。
+
+`hi = user.hi` 赋值等其他的操作，将引用类型作为一个整体丢弃，只获取 `user.hi`（一个函数）的值进行传递。因此，进一步操作『失去』了 `this`（值）。
+
+所以如果直接使用点 `obj.method()` 或方括号语法 `obj[method]()`（它们在这里并无差别）调用函数，那么作为结果，`this`值会以正确的方式进行传递。
+
+### 箭头函数没有自己的 "this"
+
+```js
+let user = {
+  firstName: "Ilya",
+  sayHi() {
+    let arrow = () => alert(this.firstName);
+    arrow();
+  }
+};
+
+user.sayHi(); // Ilya
+```
+
+The value of `this` is defined at run-time.
+
+this 的值是在运行时定义的：
+
+- When a function is declared, it may use `this`, but that `this` has no value until the function is called.
+- That function can be copied between objects.
+- When a function is called in the “method” syntax: `object.method()`, the value of `this` during the call is `object`.
+
+## 4.5 Object to primitive conversion
+
+### ToPrimitive
+
+#### string
+
+```js
+// output
+alert(obj);
+
+// using object as a property key
+anotherObj[obj] = 123;
+```
+
+#### number
+
+```js
+// explicit conversion
+let num = Number(obj);
+
+// maths (except binary plus)
+let n = +obj; // unary plus
+let delta = date1 - date2;
+
+// less/greater comparison
+let greater = user1 > user2;
+```
+
+#### default
+
+默认与number一样
+
+**To do the conversion, JavaScript tries to find and call three object methods:**
+
+1. Call `obj[Symbol.toPrimitive](hint)` if the method exists,
+
+2. Otherwise if hint is "string"
+   - try `obj.toString()` and `obj.valueOf()`, whatever exists.
+
+3. Otherwise if hint is"number"or"default"
+   - try `obj.valueOf()` and `obj.toString()`, whatever exists.
+
+## 4.6 Constructor, operator "new"
+
+### 构造函数
+
+构造函数约定：
+
+1. 首字母大写
+2. 只能用 new 操作符执行
+
+```js
+function User(name) {
+  this.name = name;
+  this.isAdmin = false;
+}
+
+let user = new User("Jack");
+
+alert(user.name); // Jack
+alert(user.isAdmin); // false
+```
+
+当函数作为 `new User(...)` 执行，会遵循下面的步骤：
+
+1. 创建一个新的空对象，然后分配 `this`。
+2. 函数体执行。通常会修改 `this`，为其添加新的属性。
+3. 返回 `this` 的值。
+
+就像下面这样：
+
+```js
+function User(name) {
+  // this = {};  (implicitly)
+
+  // add properties to this
+  this.name = name;
+  this.isAdmin = false;
+
+  // return this;  (implicitly)
+}
+```
+
+### 构造函数的return
+
+如果返回的是对象，则返回该对象，而不是 this，如果是原始值，则被忽略，还是返回this
+
+```js
+function BigUser() {
+
+  this.name = "John";
+
+  return { name: "Godzilla" };  // <-- returns an object
+}
+
+alert( new BigUser().name );  // Godzilla, got that object ^^
+
+function SmallUser() {
+
+  this.name = "John";
+
+  return; // finishes the execution, returns this
+
+  // ...
+
+}
+
+alert( new SmallUser().name );  // John
+```
+
+## 5.2 Numbers
+
+JavaScript 中的所有数字都以 64 位格式 [IEEE-754](http://en.wikipedia.org/wiki/IEEE_754-1985) 存储，也称为“双精度”。
+
+```js
+let billion = 1e9;  // 1 billion, literally: 1 and 9 zeroes
+alert( 7.3e9 );  // 7.3 billions (7,300,000,000)
+
+let ms = 0.000001;
+let ms = 1e-6; // six zeroes to the left from 1
+```
+
+```
+1e3 = 1 * 1000
+1.23e6 = 1.23 * 1000000
+
+// -3 divides by 1 with 3 zeroes
+1e-3 = 1 / 1000 (=0.001)
+
+// -6 divides by 1 with 6 zeroes
+1.23e-6 = 1.23 / 1000000 (=0.00000123)
+```
+
+Hexadecimal 十六进制 0x
+
+Binary 二进制 0b
+
+octal 八进制 0o
+
+```js
+alert( 0xff ); // 255
+alert( 0xFF ); // 255 (the same, case doesn't matter)
+
+let a = 0b11111111; // binary form of 255
+let b = 0o377; // octal form of 255
+
+alert( a == b ); // true, the same number 255 at both sides
+```
+
+
+
+
+
 ## 6.1 Recursion and stack
 
 Iterative：迭代
