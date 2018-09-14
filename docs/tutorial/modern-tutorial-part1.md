@@ -520,7 +520,257 @@ let b = 0o377; // octal form of 255
 alert( a == b ); // true, the same number 255 at both sides
 ```
 
+### toString(base)
 
+```js
+let num = 255;
+
+alert( num.toString(16) );  // ff
+alert( num.toString(2) );   // 11111111
+```
+
+`base` 可以从 `2` 变到 `36`。默认情况下它是 `10`。
+
+常见的用例如下：
+
+- **base=16** 用于十六进制颜色，字符编码等，数字可以是 `0..9` 或 `A..F`。
+
+- **base=2** 主要用于调试按位操作，数字可以是 `0` 或 `1`。
+
+- **base=36** 是最大值，数字可以是 `0..9` 或 `A..Z`。整个拉丁字母用来表示一个数字。对于 `36` 来说，一个有趣而有用的例子是，当我们需要将一个较长的数字标识符变成较短的时候，例如做一个简短的URL。可以简单地用基数为 `36` 的数字系统表示：
+
+  ```js
+  alert( 123456..toString(36) ); // 2n9c
+  ```
+
+### 四舍五入
+
+以下是总结它们之间差异的表格：
+
+|        | `Math.floor` | `Math.ceil` | `Math.round` | `Math.trunc` |
+| ------ | ------------ | ----------- | ------------ | ------------ |
+| `3.1`  | `3`          | `4`         | `3`          | `3`          |
+| `3.6`  | `3`          | `4`         | `4`          | `3`          |
+| `-1.1` | `-2`         | `-1`        | `-1`         | `-1`         |
+| `-1.6` | `-2`         | `-1`        | `-2`         | `-1`         |
+
+小数处理：
+
+1. 乘法和除法
+
+   例如，要将数字四舍五入到小数点后的第二个数字，我们可以将数字乘以 100，调用舍入函数，然后再将其除回 100。
+
+   ```
+   let num = 1.23456;
+   
+   alert( Math.floor(num * 100) / 100 ); // 1.23456 -> 123.456 -> 123 -> 1.23
+   ```
+
+2. 函数 [toFixed(n)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed) 将点数后的数字四舍五入到 `n` 个数字并返回结果的字符串表示。
+
+   ```
+   let num = 12.34;
+   alert( num.toFixed(1) ); // "12.3"
+   ```
+
+   这会向上或向下舍入到最接近的值，类似于 `Math.round`：
+
+   ```
+   let num = 12.36;
+   alert( num.toFixed(1) ); // "12.4"
+   ```
+
+   请注意 `toFixed` 的结果是一个字符串。如果小数部分比所需要的短，则在结尾添加零：
+
+   ```
+   let num = 12.34;
+   alert( num.toFixed(5) ); // "12.34000", added zeroes to make exactly 5 digits 
+   ```
+
+   我们可以使用一元加号或 `Number()` 调用将其转换为数字：`+ num.toFixed(5)`。
+
+### 不精确计算
+
+在 js 内部，一个数字以 64 位格式 [IEEE-754](http://en.wikipedia.org/wiki/IEEE_754-1985) 表示，所以正好有 64 位来存储一个数字：其中 52 位用来存储这些数字， 11 位用来存储小数点的位置（它们对于整数为零），1 位用于符号。
+
+如果一个数过大，超过64位能存储的量，会给出 Infinity：
+
+```javascript
+alert( 1e500 ); // Infinity
+```
+
+精度的丢失也经常出现：
+
+```javascript
+alert( 0.1 + 0.2 ); // 0.30000000000000004
+```
+
+这是为什么呢？
+
+数字是以二进制的形式存储在内存中的，是0和1的序列。但是像 `0.1`, `0.2`这样的分数在十进制数字系统中很简单，实际上在二进制形式下是无穷分数。
+
+也就是说，`0.1`是什么？是一除以十，`1/10`。在十进制数字系统，这样的数字是很容易表达的，相比于三分之一：`1/3`，就是无限小数 `0.33333(3)`。
+
+也就是说，二进制下只有.5是靠谱的。
+
+```javascript
+alert( 0.1.toFixed(20) ); // 0.10000000000000000555
+```
+
+怎么解决呢？
+
+1.  [toFixed(n)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/toFixed):
+
+```javascript
+let sum = 0.1 + 0.2;
+alert( +sum.toFixed(2) ); // 0.3
+```
+
+Please note that `toFixed` always returns a string.
+
+2. 把数字转成整数，运算完再转换回来：
+
+3. ```javascript
+   alert( (0.1 * 10 + 0.2 * 10) / 10 ); // 0.3
+   ```
+
+### Tests: isFinite and isNaN
+
+- `Infinite` (and `-Infinite`) is a special numeric value that is greater (less) than anything.
+- `NaN` represents an error.
+
+```javascript
+alert( isNaN(NaN) ); // true
+alert( isNaN("str") ); // true
+```
+
+```javascript
+alert( isFinite("15") ); // true
+alert( isFinite("str") ); // false, because a special value: NaN
+alert( isFinite(Infinity) ); // false, because a special value: Infinity
+```
+
+### parseInt and parseFloat
+
+```javascript
+alert( parseInt('100px') ); // 100
+alert( parseFloat('12.5em') ); // 12.5
+
+alert( parseInt('12.3') ); // 12, only the integer part is returned
+alert( parseFloat('12.3.4') ); // 12.3, the second point stops the reading
+```
+
+```javascript
+alert( parseInt('a123') ); // NaN, the first symbol stops the process
+```
+
+### Other math functions
+
+```
+Math.random()
+```
+
+Returns a random number from 0 to 1 (not including 1)
+
+```javascript
+alert( Math.random() ); // 0.1234567894322
+alert( Math.random() ); // 0.5435252343232
+alert( Math.random() ); // ... (any random numbers)
+Math.max(a, b, c...)` / `Math.min(a, b, c...)
+```
+
+Returns the greatest/smallest from the arbitrary number of arguments.
+
+```javascript
+alert( Math.max(3, 5, -10, 0, 1) ); // 5
+alert( Math.min(1, 2) ); // 1
+Math.pow(n, power)
+```
+
+Returns `n` raised the given power
+
+```javascript
+alert( Math.pow(2, 10) ); // 2 in power 10 = 1024
+```
+
+任务：
+
+[A random integer from min to max](https://javascript.info/number#a-random-integer-from-min-to-max)
+
+## 5.3 Strings
+
+有三种引号：
+
+```javascript
+let single = 'single-quoted';
+let double = "double-quoted";
+
+let backticks = `backticks`;
+```
+
+反引号支持多行：
+
+```javascript
+let guestList = `Guests:
+ * John
+ * Pete
+ * Mary
+`;
+
+alert(guestList); // a list of guests, multiple lines
+```
+
+还支持调用函数：
+
+```javascript
+function sum(a, b) {
+  return a + b;
+}
+
+alert(`1 + 2 = ${sum(1, 2)}.`); // 1 + 2 = 3.
+```
+
+### 特殊符号
+
+| Character      | Description                                                  |
+| -------------- | ------------------------------------------------------------ |
+| `\b`           | Backspace                                                    |
+| `\f`           | Form feed                                                    |
+| `\n`           | New line                                                     |
+| `\r`           | Carriage return                                              |
+| `\t`           | Tab                                                          |
+| `\uNNNN`       | A unicode symbol with the hex code `NNNN`, for instance `\u00A9` – is a unicode for the copyright symbol `©`. It must be exactly 4 hex digits. |
+| `\u{NNNNNNNN}` | Some rare characters are encoded with two unicode symbols, taking up to 4 bytes. This long unicode requires braces around it. |
+
+### Accessing characters
+
+```javascript
+let str = `Hello`;
+
+// the first character
+alert( str[0] ); // H
+alert( str.charAt(0) ); // H
+
+// the last character
+alert( str[str.length - 1] ); // o
+```
+
+```javascript
+let str = `Hello`;
+
+alert( str[1000] ); // undefined
+alert( str.charAt(1000) ); // '' (an empty string)
+```
+
+```javascript
+for (let char of "Hello") {
+  alert(char); // H,e,l,l,o (char becomes "H", then "e", then "l" etc)
+}
+```
+
+### 查找子字符串
+
+#### str.indexOf
 
 
 
