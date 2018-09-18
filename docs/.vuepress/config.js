@@ -9,7 +9,8 @@ module.exports = {
       { text: '教程笔记', link: '/tutorial/' },
       { text: '专题', link: '/subject/' },
       { text: '基础', link: '/basic/' },
-      { text: '题', link: '/question/' }
+      { text: '题', link: '/question/' },
+      { text: '算法', link: '/algorithm/' }
     ],
     sidebar: {
       '/subject/': [
@@ -21,6 +22,9 @@ module.exports = {
         ''
       ],
       '/question/': [
+        ''
+      ],
+      '/algorithm/': [
         ''
       ],
       '/tutorial/': [

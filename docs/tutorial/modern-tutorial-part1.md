@@ -1277,9 +1277,9 @@ let youngerUsers = users.filter(user.younger, user);
 alert(youngerUsers.length); // 2
 ```
 
-任务：
+### 任务：
 
-- 将横线隔开的字符串变成驼峰式
+#### 将横线隔开的字符串变成驼峰式
 
 ```js
 function camelize(str) {
@@ -1292,7 +1292,88 @@ function camelize(str) {
 }
 ```
 
+#### 范围过滤
 
+```js
+function filterRange(arr, a, b) {
+      // added brackets around the expression for better readability
+      return arr.filter(item => (a <= item && item <= b));
+    }
+```
+
+#### 范围替换
+
+```js
+    function filterRangeInPlace (arr, a, b) {
+      for(let i=0; i< arr.length; i++) {
+        let val = arr[i]
+        if(val < a || val > b) {
+          arr.splice(i, 1)
+          i--
+        }
+      }
+    }
+```
+
+#### 复制数组并排序，不影响原来数组
+
+```js
+function copySorted(arr) {
+  return arr.slice().sort();
+}
+
+let arr = ["HTML", "JavaScript", "CSS"];
+
+let sorted = copySorted(arr);
+
+alert( sorted );
+alert( arr );
+```
+
+这里使用slice来复制数组，返回一个新数组
+
+#### shuffle数组
+
+https://javascript.info/task/shuffle
+
+```javascript
+function shuffle(array) {
+  array.sort(() => Math.random() - 0.5);
+}
+
+let arr = [1, 2, 3];
+shuffle(arr);
+alert(arr);
+```
+
+ [Fisher-Yates shuffle](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle) 算法
+
+```js
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+```
+
+#### 数组去重
+
+简单版，复杂度O(n^2)
+
+```js
+function unique(arr) {
+      let result = [];
+    
+      for (let str of arr) {
+        if (!result.includes(str)) {
+          result.push(str);
+        }
+      }
+    
+      return result;
+    }
+```
 
 
 
