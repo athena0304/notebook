@@ -2,6 +2,8 @@
 
 ## [Fisher–Yates shuffle](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle)
 
+用于生成有限序列的随机排列。该算法有效地将所有元素放入帽子中;它通过从帽子中随机抽取一个元素来不断地确定下一个元素，直到没有元素剩下为止。
+
 ### Modern method
 
 We'll now do the same thing using [Durstenfeld's version](https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm) of the algorithm: this time, instead of striking out the chosen numbers and copying them elsewhere, we'll swap them with the last number not yet chosen. We'll start by writing out the numbers from 1 to 8 as before:
@@ -34,8 +36,8 @@ The next random number we roll is from 1 to 6, and just happens to be 6, which m
 
 At this point there's nothing more that can be done, so the resulting permutation is 7 5 4 3 1 8 2 6.
 
-<p data-height="338" data-theme-id="0" data-slug-hash="vzQYER" data-default-tab="result" data-user="athena0304" data-pen-title="Fisher–Yates shuffle" class="codepen">See the Pen <a href="https://codepen.io/athena0304/pen/vzQYER/">Fisher–Yates shuffle</a> by Athena (<a href="https://codepen.io/athena0304">@athena0304</a>) on <a href="https://codepen.io">CodePen</a>.</p>
-<script async src="https://static.codepen.io/assets/embed/ei.js"></script>
+<iframe height='324' scrolling='no' title='Fisher–Yates shuffle' src='//codepen.io/athena0304/embed/vzQYER/?height=324&theme-id=0&default-tab=result&embed-version=2' frameborder='no' allowtransparency='true' allowfullscreen='true' style='width: 100%;'>See the Pen <a href='https://codepen.io/athena0304/pen/vzQYER/'>Fisher–Yates shuffle</a> by Athena (<a href='https://codepen.io/athena0304'>@athena0304</a>) on <a href='https://codepen.io'>CodePen</a>.
+</iframe>
 
 ```javascript
 function shuffle(array) {
@@ -75,4 +77,3 @@ for (let key in count) {
 312: 166199
 321: 166316
 ```
-
