@@ -772,6 +772,528 @@ for (let char of "Hello") {
 
 #### str.indexOf
 
+[str.indexOf(substr, pos)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/indexOf)
+
+```javascript
+let str = 'Widget with id';
+
+alert( str.indexOf('Widget') ); // 0, because 'Widget' is found at the beginning
+alert( str.indexOf('widget') ); // -1, not found, the search is case-sensitive
+
+alert( str.indexOf("id") ); // 1, "id" is found at the position 1 (..idget with id)
+```
+
+```javascript
+let str = 'Widget with id';
+
+alert( str.indexOf('id', 2) ) // 12
+```
+
+```javascript
+let str = 'As sly as a fox, as strong as an ox';
+
+let target = 'as'; // let's look for it
+
+let pos = 0;
+while (true) {
+  let foundPos = str.indexOf(target, pos);
+  if (foundPos == -1) break;
+
+  alert( `Found at ${foundPos}` );
+  pos = foundPos + 1; // continue the search from the next position
+}
+```
+
+```javascript
+let str = "As sly as a fox, as strong as an ox";
+let target = "as";
+
+let pos = -1;
+while ((pos = str.indexOf(target, pos + 1)) != -1) {
+  alert( pos );
+}
+```
+
+if情况下：
+
+```javascript
+let str = "Widget with id";
+
+if (str.indexOf("Widget") != -1) {
+    alert("We found it"); // works now!
+}
+```
+
+```javascript
+alert( ~2 ); // -3, the same as -(2+1)
+alert( ~1 ); // -2, the same as -(1+1)
+alert( ~0 ); // -1, the same as -(0+1)
+alert( ~-1 ); // 0, the same as -(-1+1)
+```
+
+```javascript
+let str = "Widget";
+
+if (~str.indexOf("Widget")) {
+  alert( 'Found it!' ); // works
+}
+```
+
+#### includes, startsWith, endsWith
+
+```javascript
+alert( "Midget".includes("id") ); // true
+alert( "Midget".includes("id", 3) ); // false, from position 3 there is no "id"
+```
+
+```javascript
+alert( "Widget".startsWith("Wid") ); // true, "Widget" starts with "Wid"
+alert( "Widget".endsWith("get") );   // true, "Widget" ends with "get"
+```
+
+
+
+### 获取子字符串
+
+有三种方法获取子字符串：`substring`, `substr` and `slice`。
+
+#### str.slice(start [, end])
+
+```javascript
+let str = "stringify";
+alert( str.slice(0, 5) ); // 'strin', the substring from 0 to 5 (not including 5)
+alert( str.slice(0, 1) ); // 's', from 0 to 1, but not including 1, so only character at 0
+```
+
+```javascript
+let str = "stringify";
+alert( str.slice(2) ); // ringify, from the 2nd position till the end
+```
+
+```javascript
+let str = "stringify";
+
+// start at the 4th position from the right, end at the 1st from the right
+alert( str.slice(-4, -1) ); // gif
+```
+
+#### str.substring(start [, end])
+
+This is almost the same as `slice`, it allows `start` to be greater than `end`
+
+不支持负数，被当做是 `0`。
+
+```javascript
+let str = "stringify";
+
+// these are same for substring
+alert( str.substring(2, 6) ); // "ring"
+alert( str.substring(6, 2) ); // "ring"
+
+// ...but not for slice:
+alert( str.slice(2, 6) ); // "ring" (the same)
+alert( str.slice(6, 2) ); // "" (an empty string)
+```
+
+#### str.substr(start [, length])
+
+与前面不同的是可以指定长度
+
+```javascript
+let str = "stringify";
+alert( str.substr(2, 4) ); // ring, from the 2nd position get 4 characters
+```
+
+```javascript
+let str = "stringify";
+alert( str.substr(-4, 2) ); // gi, from the 4th position get 2 characters
+```
+
+| method                  | selects…                                    | negatives                |
+| ----------------------- | ------------------------------------------- | ------------------------ |
+| `slice(start, end)`     | from `start` to `end` (not including `end`) | allows negatives         |
+| `substring(start, end)` | between `start` and `end`                   | negative values mean `0` |
+| `substr(start, length)` | from `start` get `length` characters        | allows negative `start`  |
+
+### 比较字符串
+
+小写字母大于大写字母
+
+```javascript
+alert( 'a' > 'Z' ); // true
+```
+
+在 Javascript 中，所有的字符串都是使用 [UTF-16](https://en.wikipedia.org/wiki/UTF-16) 进行编码的。也就是说，每个字符都有相应的数字代码。有一些特殊的方法允许获取代码的字符并返回。
+
+#### str.codePointAt(pos)
+
+```javascript
+// different case letters have different codes
+alert( "z".codePointAt(0) ); // 122
+alert( "Z".codePointAt(0) ); // 90
+```
+
+#### String.fromCodePoint(code)
+
+```javascript
+alert( String.fromCodePoint(90) ); // Z
+```
+
+```javascript
+// 90 is 5a in hexadecimal system
+alert( '\u005a' ); // Z
+```
+
+```javascript
+let str = '';
+
+for (let i = 65; i <= 220; i++) {
+  str += String.fromCodePoint(i);
+}
+alert( str );
+// ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+// ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜ
+```
+
+#### 正确的比较
+
+所有的现代浏览器都支持国际化标准 [ECMA 402](http://www.ecma-international.org/ecma-402/1.0/ECMA-402.pdf)。
+
+它提供了一种特殊的方法来按照字符串的规则比较不同语言中的字符串。
+
+The call [str.localeCompare(str2)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare):
+
+- Returns `1` if `str` is greater than `str2` according to the language rules.
+- Returns `-1` if `str` is less than `str2`.
+- Returns `0` if they are equal.
+
+```javascript
+alert( 'Österreich'.localeCompare('Zealand') ); // -1
+```
+
+```js
+var a = 'réservé'; // with accents, lowercase
+var b = 'RESERVE'; // no accents, uppercase
+
+console.log(a.localeCompare(b));
+// expected output: 1
+console.log(a.localeCompare(b, 'en', {sensitivity: 'base'}));
+// expected output: 0
+```
+
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/localeCompare
+
+### 任务
+
+#### 首字母大写
+
+Write a function `ucFirst(str)` that returns the string `str` with the uppercased first character, for instance:
+
+```javascript
+ucFirst("john") == "John";
+```
+
+这个问题，乍一写就容易写成下面这样：
+
+```javascript
+let newStr = str[0].toUpperCase() + str.slice(1);
+```
+
+然而会有一个小问题，就是当参数 `str` 为空的情况下，`str[0]` 就是 undefined 了，就会报错。
+
+有两种方法解决这个问题：
+
+1. 使用 `str.charAt(0)` 始终返回的是字符串，可以为空
+2. 对空字符串进行检查：
+
+```javascript
+function ucFirst(str) {
+  if (!str) return str;
+
+  return str[0].toUpperCase() + str.slice(1);
+}
+
+alert( ucFirst("john") ); // John
+```
+
+#### 敏感词检查
+
+```javascript
+function checkSpam(str) {
+  let lowerStr = str.toLowerCase();
+
+  return lowerStr.includes('viagra') || lowerStr.includes('xxx');
+}
+
+alert( checkSpam('buy ViAgRA now') );
+alert( checkSpam('free xxxxx') );
+alert( checkSpam("innocent rabbit") );
+```
+
+#### 截断文本
+
+ `truncate(str, maxlength)` 如果长度超了，就用 `…` 代替
+
+```javascript
+function truncate(str, maxlength) {
+  return (str.length > maxlength) ?
+    str.slice(0, maxlength - 1) + '…' : str;
+}
+```
+
+#### 提取钱数
+
+`extractCurrencyValue(str)` 只提取$符号后面的数字
+
+```js
+function extractCurrencyValue(str) {
+      return +str.slice(1);
+    }
+```
+
+
+
+## 5.4 Arrays
+
+```
+alert( [] + 1 ); // "1"
+alert( [1] + 1 ); // "11"
+alert( [1,2] + 1 ); // "1,21"
+```
+
+```javascript
+let arr = ["a", "b"];
+
+arr.push(function() {
+  alert( this );
+})
+
+arr[2](); // "a","b",function
+```
+
+### 任务
+
+求最大子数组的和
+
+```js
+function getMaxSubSum(arr) {
+  let maxSum = 0;
+  let partialSum = 0;
+
+  for (let item of arr) { // for each item of arr
+    partialSum += item; // add it to partialSum
+    maxSum = Math.max(maxSum, partialSum); // remember the maximum
+    if (partialSum < 0) partialSum = 0; // zero if negative
+  }
+
+  return maxSum;
+}
+
+alert( getMaxSubSum([-1, 2, 3, -9]) ); // 5
+alert( getMaxSubSum([-1, 2, 3, -9, 11]) ); // 11
+alert( getMaxSubSum([-2, -1, 1, 2]) ); // 3
+alert( getMaxSubSum([100, -9, 2, -3, 5]) ); // 100
+alert( getMaxSubSum([1, 2, 3]) ); // 6
+alert( getMaxSubSum([-1, -2, -3]) ); // 0
+```
+
+## 5.5 Array methods
+
+- To add/remove elements:
+
+  - `push(...items)` – adds items to the end,
+  - `pop()` – extracts an item from the end,
+  - `shift()` – extracts an item from the beginning,
+  - `unshift(...items)` – adds items to the beginning.
+  - `splice(pos, deleteCount, ...items)` – at index `pos` delete `deleteCount` elements and insert `items`. [arr.splice(str)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice)
+  - `slice(start, end)` – creates a new array, copies elements from position `start` till `end` (not inclusive) into it.
+  - `concat(...items)` – returns a new array: copies all members of the current one and adds `items` to it. If any of `items` is an array, then its elements are taken.
+
+- To search among elements:
+
+  - `indexOf/lastIndexOf(item, pos)` – look for `item` starting from position `pos`, return the index or `-1` if not found.
+  - `includes(value)` – returns `true` if the array has `value`, otherwise `false`.
+  - `find/filter(func)` – filter elements through the function, return first/all values that make it return `true`.
+  - `findIndex` is like `find`, but returns the index instead of a value.
+
+- To transform the array:
+
+  - `map(func)` – creates a new array from results of calling `func` for every element.
+  - `sort(func)` – sorts the array in-place, then returns it.
+  - `reverse()` – reverses the array in-place, then returns it.
+  - `split/join` – convert a string to array and back.
+  - `reduce(func, initial)` – calculate a single value over the array by calling `func` for each element and passing an intermediate result between the calls.
+
+- To iterate over elements:
+
+  - `forEach(func)` – calls `func` for every element, does not return anything.
+
+- Additionally:
+
+  - `Array.isArray(arr)` checks `arr` for being an array.
+
+- [arr.some(fn)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some)/[arr.every(fn)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every) checks the array.
+
+  The function `fn` is called on each element of the array similar to `map`. If any/all results are `true`, returns `true`, otherwise `false`.
+
+- [arr.fill(value, start, end)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/fill) – fills the array with repeating `value` from index `start` to `end`.
+
+- [arr.copyWithin(target, start, end)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/copyWithin) – copies its elements from position `start` till position `end` into *itself*, at position `target` (overwrites existing).
+
+`sort`, `reverse` and `splice` 修改了数组本身
+
+要注意的地方：
+
+- splice接受负数
+
+```javascript
+let arr = [1, 2, 5];
+
+// from index -1 (one step from the end)
+// delete 0 elements,
+// then insert 3 and 4
+arr.splice(-1, 0, 3, 4);
+
+alert( arr ); // 1,2,3,4,5
+```
+
+- concat时，对象带有 `Symbol.isConcatSpreadable` 属性：
+
+```javascript
+let arr = [1, 2];
+
+let arrayLike = {
+  0: "something",
+  1: "else",
+  [Symbol.isConcatSpreadable]: true,
+  length: 2
+};
+
+alert( arr.concat(arrayLike) ); // 1,2,something,else
+```
+
+- 对于NaN的处理
+
+```javascript
+const arr = [NaN];
+alert( arr.indexOf(NaN) ); // -1 (should be 0, but === equality doesn't work for NaN)
+alert( arr.includes(NaN) );// true (correct)
+```
+
+- find
+
+```javascript
+let result = arr.find(function(item, index, array) {
+  // should return true if the item is what we are looking for
+});
+```
+
+```javascript
+let users = [
+  {id: 1, name: "John"},
+  {id: 2, name: "Pete"},
+  {id: 3, name: "Mary"}
+];
+
+let user = users.find(item => item.id == 1);
+
+alert(user.name); // John
+```
+
+The [arr.findIndex](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex) method is essentially the same, but it returns the index where the element was found instead of the element itself.
+
+- split还有第二个参数呢
+
+```javascript
+let arr = 'Bilbo, Gandalf, Nazgul, Saruman'.split(', ', 2);
+
+alert(arr); // Bilbo, Gandalf
+```
+
+- reduce/reduceRight
+
+```javascript
+let value = arr.reduce(function(previousValue, item, index, arr) {
+  // ...
+}, initial);
+```
+
+`previousValue` – is the result of the previous function call, `initial` for the first call.
+
+```javascript
+let arr = [1, 2, 3, 4, 5];
+
+let result = arr.reduce((sum, current) => sum + current, 0);
+
+alert(result); // 15
+```
+
+```javascript
+let arr = [1, 2, 3, 4, 5];
+
+// removed initial value from reduce (no 0)
+let result = arr.reduce((sum, current) => sum + current);
+
+alert( result ); // 15
+```
+
+```javascript
+let arr = [];
+
+// Error: Reduce of empty array with no initial value
+// if the initial value existed, reduce would return it for the empty arr.
+arr.reduce((sum, current) => sum + current);
+```
+
+- Array.isArray
+
+typeof 判断不出来是否是数组
+
+```javascript
+alert(Array.isArray({})); // false
+
+alert(Array.isArray([])); // true
+```
+
+-  thisArg
+
+```javascript
+let user = {
+  age: 18,
+  younger(otherUser) {
+    return otherUser.age < this.age;
+  }
+};
+
+let users = [
+  {age: 12},
+  {age: 16},
+  {age: 32}
+];
+
+// find all users younger than user
+let youngerUsers = users.filter(user.younger, user);
+
+alert(youngerUsers.length); // 2
+```
+
+任务：
+
+- 将横线隔开的字符串变成驼峰式
+
+```js
+function camelize(str) {
+  return str
+    .split('-') // my-long-word -> ['my', 'long', 'word']
+    .map( 
+      (word, index) => index == 0 ? word : word[0].toUpperCase() + word.slice(1)
+    ) // ['my', 'long', 'word'] -> ['my', 'Long', 'Word']
+    .join(''); // ['my', 'Long', 'Word'] -> myLongWord
+}
+```
+
+
+
 
 
 ## 6.1 Recursion and stack
