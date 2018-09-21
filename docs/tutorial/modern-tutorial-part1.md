@@ -1375,7 +1375,736 @@ function unique(arr) {
     }
 ```
 
+## 5.6 Iterables
 
+### [Symbol.iterator](https://javascript.info/iterable#symbol-iterator)
+
+- When `for..of` starts, it calls that method (or errors if not found).
+- The method must return an *iterator* – an object with the method `next`.
+- When `for..of` wants the next value, it calls `next()` on that object.
+- The result of `next()` must have the form `{done: Boolean, value: any}`, where `done=true` means that the iteration is finished, otherwise `value` must be the new value.
+
+```js
+let range = {
+  from: 1,
+  to: 5
+};
+
+// 1. call to for..of initially calls this
+range[Symbol.iterator] = function() {
+
+  // 2. ...it returns the iterator:
+  return {
+    current: this.from,
+    last: this.to,
+
+    // 3. next() is called on each iteration by the for..of loop
+    next() {
+      // 4. it should return the value as an object {done:.., value :...}
+      if (this.current <= this.last) {
+        return { done: false, value: this.current++ };
+      } else {
+        return { done: true };
+      }
+    }
+  };
+};
+
+// now it works!
+for (let num of range) {
+  alert(num); // 1, then 2, 3, 4, 5
+}
+```
+
+也可以把对象本身用作迭代器
+
+```javascript
+let range = {
+  from: 1,
+  to: 5,
+
+  [Symbol.iterator]() {
+    this.current = this.from;
+    return this;
+  },
+
+  next() {
+    if (this.current <= this.to) {
+      return { done: false, value: this.current++ };
+    } else {
+      return { done: true };
+    }
+  }
+};
+
+for (let num of range) {
+  alert(num); // 1, then 2, 3, 4, 5
+}
+```
+
+### 字符串是可迭代的
+
+```javascript
+for (let char of "test") {
+  alert( char ); // t, then e, then s, then t
+}
+```
+
+这种迭代器主要是对字符串的UTF-16扩展字符比较友好
+
+```javascript
+let str = '𝒳😂';
+for (let char of str) {
+    alert( char ); // 𝒳, and then 😂
+}
+```
+
+### Array.from
+
+```javascript
+Array.from(obj[, mapFn, thisArg])
+```
+
+```js
+let arrayLike = {
+  0: "Hello",
+  1: "World",
+  length: 2
+};
+
+let arr = Array.from(arrayLike); // (*)
+alert(arr.pop()); // World (method works)
+```
+
+```javascript
+// assuming that range is taken from the example above
+
+// square each number
+let arr = Array.from(range, num => num * num);
+
+alert(arr); // 1,4,9,16,25
+```
+
+将字符串转换成数组：
+
+```javascript
+let str = '𝒳😂';
+
+// splits str into array of characters
+let chars = Array.from(str);
+
+alert(chars[0]); // 𝒳
+alert(chars[1]); // 😂
+alert(chars.length); // 2
+```
+
+```javascript
+function slice(str, start, end) {
+  return Array.from(str).slice(start, end).join('');
+}
+
+let str = '𝒳😂𩷶';
+
+alert( slice(str, 1, 3) ); // 😂𩷶
+
+// native method does not support surrogate pairs
+alert( str.slice(1, 3) ); // garbage (two pieces from different surrogate pairs)
+```
+
+## 5.7 Map、Set、WeakMap 和 WeakSet
+
+### Map
+
+`Map` 允许所有数据类型作为键，Object会把键都转成字符串。
+
+如果是对象，则都是 `[object Object]`，这样就会有问题
+
+- `new Map()` – creates the map.
+- `map.set(key, value)` – stores the value by the key.
+- `map.get(key)` – returns the value by the key, `undefined` if `key` doesn’t exist in map.
+- `map.has(key)` – returns `true` if the `key` exists, `false` otherwise.
+- `map.delete(key)` – removes the value by the key.
+- `map.clear()` – clears the map
+- `map.size` – returns the current element count.
+
+```javascript
+let map = new Map();
+
+map.set('1', 'str1');   // a string key
+map.set(1, 'num1');     // a numeric key
+map.set(true, 'bool1'); // a boolean key
+
+// remember the regular Object? it would convert keys to string
+// Map keeps the type, so these two are different:
+alert( map.get(1)   ); // 'num1'
+alert( map.get('1') ); // 'str1'
+
+alert( map.size ); // 3
+```
+
+对象作为键：
+
+```js
+let john = { name: "John" };
+
+// for every user, let's store his visits count
+let visitsCountMap = new Map();
+
+// john is the key for the map
+visitsCountMap.set(john, 123);
+
+alert( visitsCountMap.get(john) ); // 123
+```
+
+链式调用
+
+```javascript
+map.set('1', 'str1')
+  .set(1, 'num1')
+  .set(true, 'bool1');
+```
+
+#### Map from Object
+
+```javascript
+let map = new Map(Object.entries({
+  name: "John",
+  age: 30
+}));
+```
+
+#### 遍历Map
+
+- `map.keys()` – returns an iterable for keys,
+- `map.values()` – returns an iterable for values,
+- `map.entries()` – returns an iterable for entries `[key, value]`, it’s used by default in `for..of`.
+
+```javascript
+let recipeMap = new Map([
+  ['cucumber', 500],
+  ['tomatoes', 350],
+  ['onion',    50]
+]);
+
+// iterate over keys (vegetables)
+for (let vegetable of recipeMap.keys()) {
+  alert(vegetable); // cucumber, tomatoes, onion
+}
+
+// iterate over values (amounts)
+for (let amount of recipeMap.values()) {
+  alert(amount); // 500, 350, 50
+}
+
+// iterate over [key, value] entries
+for (let entry of recipeMap) { // the same as of recipeMap.entries()
+  alert(entry); // cucumber,500 (and so on)
+}
+```
+
+内置 `forEach`
+
+```javascript
+recipeMap.forEach( (value, key, map) => {
+  alert(`${key}: ${value}`); // cucumber: 500 etc
+});
+```
+
+### Set
+
+```
+`Set` 是一个值的集合，这个集合中所有的值仅出现一次。
+```
+
+- `new Set(iterable)` – creates the set, optionally from an array of values (any iterable will do).
+- `set.add(value)` – adds a value, returns the set itself.
+- `set.delete(value)` – removes the value, returns `true` if `value` existed at the moment of the call, otherwise `false`.
+- `set.has(value)` – returns `true` if the value exists in the set, otherwise `false`.
+- `set.clear()` – removes everything from the set.
+- `set.size` – is the elements count.
+
+```javascript
+let set = new Set(["oranges", "apples", "bananas"]);
+
+for (let value of set) alert(value);
+
+// the same with forEach:
+set.forEach((value, valueAgain, set) => {
+  alert(value);
+});
+```
+
+### WeakMap and WeakSet
+
+WeakMap 的key必须是对象，不能是原始值
+
+```javascript
+let weakMap = new WeakMap();
+
+let obj = {};
+
+weakMap.set(obj, "ok"); // works fine (object key)
+
+weakMap.set("test", "Whoops"); // Error, because "test" is a primitive
+```
+
+（没看完。。。）
+
+## 5.8 Object.keys, values, entries
+
+- [Object.keys(obj)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys) – returns an array of keys.
+- [Object.values(obj)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/values) – returns an array of values.
+- [Object.entries(obj)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/entries) – returns an array of `[key, value]` pairs.
+
+```javascript
+let user = {
+  name: "John",
+  age: 30
+};
+```
+
+- `Object.keys(user) = [name, age]`
+- `Object.values(user) = ["John", 30]`
+- `Object.entries(user) = [ ["name","John"], ["age",30] ]`
+
+#### Object.keys/values/entries 忽略 Symbol 类型的属性
+
+then there’s a separate method [Object.getOwnPropertySymbols](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/getOwnPropertySymbols) that returns an array of only symbolic keys. Also, the method [Reflect.ownKeys(obj)](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Reflect/ownKeys) returns *all* keys.
+
+## 5.9 Destructuring assignment 解构赋值
+
+### 数组解构
+
+```javascript
+// we have an array with the name and surname
+let arr = ["Ilya", "Kantor"]
+
+// destructuring assignment
+let [firstName, surname] = arr;
+
+alert(firstName); // Ilya
+alert(surname);  // Kantor
+```
+
+```js
+let [firstName, surname] = "Ilya Kantor".split(' ');
+```
+
+#### Looping with .entries()
+
+```javascript
+let user = {
+  name: "John",
+  age: 30
+};
+
+// loop over keys-and-values
+for (let [key, value] of Object.entries(user)) {
+  alert(`${key}:${value}`); // name:John, then age:30
+}
+```
+
+#### The rest ‘…’
+
+```javascript
+let [name1, name2, ...rest] = ["Julius", "Caesar", "Consul", "of the Roman Republic"];
+
+alert(name1); // Julius
+alert(name2); // Caesar
+
+alert(rest[0]); // Consul
+alert(rest[1]); // of the Roman Republic
+alert(rest.length); // 2
+```
+
+#### 默认值
+
+```javascript
+// default values
+let [name = "Guest", surname = "Anonymous"] = ["Julius"];
+
+alert(name);    // Julius (from array)
+alert(surname); // Anonymous (default used)
+```
+
+### 对象解构
+
+```js
+let options = {
+  title: "Menu",
+  width: 100,
+  height: 200
+};
+
+*!*
+let {title, width, height} = options;
+*/!*
+
+alert(title);  // Menu
+alert(width);  // 100
+alert(height); // 200
+```
+
+左边可以调换顺序
+
+```javascript
+// changed the order of properties in let {...}
+let {height, width, title} = { title: "Menu", height: 200, width: 100 }
+```
+
+指定变量名
+
+```javascript
+let {width: w, height: h, title} = options;
+```
+
+指定默认值
+
+```javascript
+let {width = 100, height = 200, title} = options;
+```
+
+冒号和等号结合
+
+```javascript
+let {width: w = 100, height: h = 200, title} = options;
+```
+
+#### 剩余运算符
+
+```js
+let options = {
+  title: "Menu",
+  height: 200,
+  width: 100
+};
+
+*!*
+let {title, ...rest} = options;
+*/!*
+
+// now title="Menu", rest={height: 200, width: 100}
+alert(rest.height);  // 200
+alert(rest.width);   // 100
+```
+
+#### 嵌套解构
+
+```javascript
+  size: {
+    width: 100,
+    height: 200
+  },
+  items: ["Cake", "Donut"],
+  extra: true    // something extra that we will not destruct
+};
+
+// destructuring assignment on multiple lines for clarity
+let {
+  size: { // put size here
+    width,
+    height
+  },
+  items: [item1, item2], // assign items here
+  title = "Menu" // not present in the object (default value is used)
+} = options;
+
+alert(title);  // Menu
+alert(width);  // 100
+alert(height); // 200
+alert(item1);  // Cake
+alert(item2);  // Donut
+```
+
+```javascript
+// take size as a whole into a variable, ignore the rest
+let { size } = options;
+```
+
+#### 智能参数函数
+
+```javascript
+// we pass object to function
+let options = {
+  title: "My menu",
+  items: ["Item1", "Item2"]
+};
+
+// ...and it immediately expands it to variables
+function showMenu({title = "Untitled", width = 200, height = 100, items = []}) {
+  // title, items – taken from options,
+  // width, height – defaults used
+  alert( `${title} ${width} ${height}` ); // My Menu 200 100
+  alert( items ); // Item1, Item2
+}
+
+showMenu(options);
+```
+
+```javascript
+let options = {
+  title: "My menu",
+  items: ["Item1", "Item2"]
+};
+
+function showMenu({
+  title = "Untitled",
+  width: w = 100,  // width goes to w
+  height: h = 200, // height goes to h
+  items: [item1, item2] // items first element goes to item1, second to item2
+}) {
+  alert( `${title} ${w} ${h}` ); // My Menu 100 200
+  alert( item1 ); // Item1
+  alert( item2 ); // Item2
+}
+
+showMenu(options);
+```
+
+```javascript
+function({
+  incomingProperty: parameterName = defaultValue
+  ...
+})
+```
+
+这样默认情况下需要传递一个空对象作为参数：
+
+```javascript
+showMenu({});
+```
+
+```javascript
+// simplified parameters a bit for clarity
+function showMenu({ title = "Menu", width = 100, height = 200 } = {}) {
+  alert( `${title} ${width} ${height}` );
+}
+
+showMenu(); // Menu 100 200
+```
+
+### 任务
+
+#### [The maximal salary](https://javascript.info/destructuring-assignment#the-maximal-salary)
+
+```js
+function topSalary(salaries) {
+    
+      let max = 0;
+      let maxName = null;
+    
+      for(let [name, salary] of Object.entries(salaries)) {
+        if (max < salary) {
+          max = salary;
+          maxName = name;
+        }
+      }
+    
+      return maxName;
+    }
+```
+
+## 5.10 Date and time
+
+### 创建
+
+#### new Date()
+
+```javascript
+let now = new Date();
+alert( now ); // shows current date/time
+```
+
+#### new Date(milliseconds)
+
+```javascript
+// 0 means 01.01.1970 UTC+0
+let Jan01_1970 = new Date(0);
+alert( Jan01_1970 );
+
+// now add 24 hours, get 02.01.1970 UTC+0
+let Jan02_1970 = new Date(24 * 3600 * 1000);
+alert( Jan02_1970 );
+```
+
+#### new Date(datestring)
+
+```javascript
+let date = new Date("2017-01-26");
+alert(date); // Thu Jan 26 2017 ...
+```
+
+#### new Date(year, month, date, hours, minutes, seconds, ms)
+
+只有前两个参数是必须的
+
+```javascript
+new Date(2011, 0, 1, 0, 0, 0, 0); // // 1 Jan 2011, 00:00:00
+new Date(2011, 0, 1); // the same, hours etc are 0 by default
+```
+
+The minimal precision is 1 ms (1/1000 sec):
+
+```javascript
+let date = new Date(2011, 0, 1, 2, 3, 4, 567);
+alert( date ); // 1.01.2011, 02:03:04.567
+```
+
+### 访问日期组件
+
+[getFullYear()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getFullYear)
+
+[getMonth()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getMonth)
+
+[getDate()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDate)
+
+[getHours()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getHours), [getMinutes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getMinutes), [getSeconds()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getSeconds), [getMilliseconds()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getMilliseconds)
+
+[getDay()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getDay) from `0` (Sunday) to `6` (Saturday)
+
+[getUTCFullYear()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getUTCFullYear), [getUTCMonth()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getUTCMonth), [getUTCDay()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getUTCDay)
+
+```javascript
+// current date
+let date = new Date();
+
+// the hour in your current time zone
+alert( date.getHours() );
+
+// the hour in UTC+0 time zone (London time without daylight savings)
+alert( date.getUTCHours() );
+```
+
+[getTime()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTime)
+
+Returns the timestamp for the date – a number of milliseconds passed from the January 1st of 1970 UTC+0.
+
+[getTimezoneOffset()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset)
+
+Returns the difference between the local time zone and UTC, in minutes:
+
+```javascript
+// if you are in timezone UTC-1, outputs 60
+// if you are in timezone UTC+3, outputs -180
+alert( new Date().getTimezoneOffset() );
+```
+
+### 设置日期组件
+
+- [`setFullYear(year [, month, date\])`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setFullYear)
+- [`setMonth(month [, date\])`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMonth)
+- [`setDate(date)`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setDate)
+- [`setHours(hour [, min, sec, ms\])`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setHours)
+- [`setMinutes(min [, sec, ms\])`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMinutes)
+- [`setSeconds(sec [, ms\])`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setSeconds)
+- [`setMilliseconds(ms)`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setMilliseconds)
+- [`setTime(milliseconds)`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/setTime) (sets the whole date by milliseconds since 01.01.1970 UTC)
+
+Every one of them except `setTime()` has a UTC-variant, for instance: `setUTCHours()`.
+
+```javascript
+let today = new Date();
+
+today.setHours(0);
+alert(today); // still today, but the hour is changed to 0
+
+today.setHours(0, 0, 0, 0);
+alert(today); // still today, now 00:00:00 sharp.
+```
+
+### 自动校准
+
+```javascript
+let date = new Date(2013, 0, 32); // 32 Jan 2013 ?!?
+alert(date); // ...is 1st Feb 2013!
+```
+
+```javascript
+let date = new Date(2016, 1, 28);
+date.setDate(date.getDate() + 2);
+
+alert( date ); // 1 Mar 2016
+```
+
+```javascript
+let date = new Date(2016, 0, 2); // 2 Jan 2016
+
+date.setDate(1); // set day 1 of month
+alert( date );
+
+date.setDate(0); // min day is 1, so the last day of the previous month is assumed
+alert( date ); // 31 Dec 2015
+```
+
+### 日期转换成数字以及差值
+
+当 `Date` 对象转化为数字时，得到的是对应的时间戳，相当于 `date.getTime()`：
+
+```js
+let date = new Date();
+alert(+date); // 以毫秒为单位的数值，相当于 date.getTime()
+```
+
+### Date.now()
+
+它相当于 `new Date().getTime()`
+
+```js
+*!*
+let start = Date.now(); // 从 1979-01-01 00:00:00 开始至今的时间戳
+*/!*
+
+// do the job
+for (let i = 0; i < 100000; i++) {
+  let doSomething = i * i * i;
+}
+
+*!*
+let end = Date.now(); // 操作完成后，得到这一时刻的时间戳
+*/!*
+
+alert( `The loop took ${end - start} ms` ); // 相减的是时间戳，而不是日期
+```
+
+### 对一个字符串使用 Date.parse
+
+Date.parse(str) 方法可以从一个字符串中读取日期。
+
+字符串的格式是：`YYYY-MM-DDTHH:mm:ss.sssZ`，其中：
+
+- `YYYY-MM-DD` —— 日期：年-月-日。
+- 字符串 `"T"` 是一个分隔符。
+- `HH:mm:ss.sss` —— 时间：小时，分钟，秒，毫秒。
+- 可选字符 `'Z'` 代表时区。单个字符 `Z` 代表 UTC+0。
+
+```js
+let ms = Date.parse('2012-01-26T13:51:50.417-07:00');
+
+alert(ms); // 1327611110417  (时间戳)
+```
+
+```js
+let date = new Date( Date.parse('2012-01-26T13:51:50.417-07:00') );
+
+alert(date);  
+```
+
+### 任务
+
+#### 周一开头
+
+```js
+function getLocalDay(date) {
+
+  let day = date.getDay();
+
+  if (day == 0) { // 0 becomes 7
+    day = 7;
+  }
+
+  return day;
+}
+```
 
 ## 6.1 Recursion and stack
 
