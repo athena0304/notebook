@@ -1,1 +1,1 @@
-# The Modern JavaScript Tutorial 笔记
+# 翻译术语
