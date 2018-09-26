@@ -29,6 +29,7 @@ module.exports = {
       ],
       '/tutorial/': [
         '',
+        'modern-tutorial-part1-6',
         'modern-tutorial-part1',
         'modern-tutorial-part2',
         'modern-tutorial-part3'

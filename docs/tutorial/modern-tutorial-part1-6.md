@@ -472,3 +472,503 @@ welcome(); // Hello, Guest (nested call works)
 这种命名只能用在函数表达式上，不能用在函数声明上面。
 
 它们创建一个「主」函数，然后给它附加很多其它「helper」函数。比如，[jquery](https://jquery.com/) 库创建了一个名为 `$` 的函数。[lodash](https://lodash.com/) 库创建一个 `_` 函数。然后添加了 `_.add`、`_.keyBy` 以及其它属性。
+
+### 任务
+
+Write function `sum` that would work like this:
+
+```javascript
+sum(1)(2) == 3; // 1 + 2
+sum(1)(2)(3) == 6; // 1 + 2 + 3
+sum(5)(-1)(2) == 6
+sum(6)(-1)(-2)(-3) == 0
+sum(0)(1)(2)(3)(4)(5) == 15
+```
+
+1. sum返回的必须是函数
+2. 函数必须记住当前的总数
+3. 返回的是函数，函数是对象，但是要 == 于数字，所以要转换成原始值
+
+```javascript
+let user = {
+  name: "John",
+  money: 1000,
+
+  // for hint="string"
+  toString() {
+    return `{name: "${this.name}"}`;
+  },
+
+  // for hint="number" or "default"
+  valueOf() {
+    return this.money;
+  }
+
+};
+
+alert(user); // toString -> {name: "John"}
+alert(+user); // valueOf -> 1000
+alert(user + 500); // valueOf -> 1500
+```
+
+```javascript
+function sum(a) {
+
+  let currentSum = a;
+
+  function f(b) {
+    currentSum += b;
+    return f;
+  }
+
+  f.toString = function() {
+    return currentSum;
+  };
+
+  return f;
+}
+
+alert( sum(1)(2) ); // 3
+alert( sum(5)(-1)(2) ); // 6
+alert( sum(6)(-1)(-2)(-3) ); // 0
+alert( sum(0)(1)(2)(3)(4)(5) ); // 15
+```
+
+## 6.7 The "new Function" syntax
+
+```js
+let func = new Function ([arg1[, arg2[, ...argN]],] functionBody)
+```
+
+```js
+let sum = new Function('a', 'b', 'return a + b'); 
+
+alert( sum(1, 2) ); // 3
+```
+
+所有的参数都是字符串
+
+### 闭包
+
+通常，函数会使用一个特殊的属性 `[[Environment]]` 来记录函数创建时的环境，它具体指向了函数创建时的词法环境。
+
+但是如果我们使用 `new Function` 创建函数，函数的 `[[Environment]]` 并不指向当前的词法环境，而是指向全局环境。
+
+```javascript
+function getFunc() {
+  let value = "test";
+
+  let func = new Function('alert(value)');
+
+  return func;
+}
+
+getFunc()(); // error: value is not defined
+```
+
+```javascript
+function getFunc() {
+  let value = "test";
+
+  let func = function() { alert(value); };
+
+  return func;
+}
+
+getFunc()(); // "test", from the Lexical Environment of getFunc
+```
+
+## 6.8 Scheduling: setTimeout and setInterval
+
+scheduling a call
+
+### setTimeout
+
+语法：
+
+```javascript
+let timerId = setTimeout(func|code, delay[, arg1, arg2...])
+```
+
+```javascript
+function sayHi(phrase, who) {
+  alert( phrase + ', ' + who );
+}
+
+setTimeout(sayHi, 1000, "Hello", "John"); // Hello, John
+```
+
+#### clearTimeout
+
+```javascript
+let timerId = setTimeout(() => alert("never happens"), 1000);
+alert(timerId); // timer identifier
+
+clearTimeout(timerId);
+alert(timerId); // same identifier (doesn't become null after canceling)
+```
+
+### setInterval
+
+```javascript
+let timerId = setInterval(func|code, delay[, arg1, arg2...])
+```
+
+```javascript
+// repeat with the interval of 2 seconds
+let timerId = setInterval(() => alert('tick'), 2000);
+
+// after 5 seconds stop
+setTimeout(() => { clearInterval(timerId); alert('stop'); }, 5000);
+```
+
+### [Recursive setTimeout](https://javascript.info/settimeout-setinterval#recursive-settimeout)
+
+```javascript
+/** instead of:
+let timerId = setInterval(() => alert('tick'), 2000);
+*/
+
+let timerId = setTimeout(function tick() {
+  alert('tick');
+  timerId = setTimeout(tick, 2000); // (*)
+}, 2000);
+```
+
+pseudocode： 伪代码
+
+#### 垃圾回收：
+
+当一个函数传入 `setInterval/setTimeout` 时，会创建一个内部引用，并保存在调度器中。这样会防止函数被垃圾回收，即使是没有别的引用到它。
+
+```javascript
+// the function stays in memory until the scheduler calls it
+setTimeout(function() {...}, 100);
+```
+
+对于 `setInterval`，直到调用 `clearInterval` 才会被清除掉。
+
+这会有副作用，函数引用了外部词法环境，那么外部变量也就会活着。它们可能会耗费比函数本身更多的内存。所以即使是很小的函数，如果不需要了，也最好是要清空。
+
+### setTimeout(…,0)
+
+有一种特殊的用法，可以看做是异步：*asynchronously*
+
+`setTimeout(func, 0)`
+
+当前代码执行完后立即执行
+
+```javascript
+setTimeout(() => alert("World"), 0);
+
+alert("Hello");
+```
+
+### Splitting CPU-hungry tasks
+
+```javascript
+let i = 0;
+
+let start = Date.now();
+
+function count() {
+
+  // do a heavy job
+  for (let j = 0; j < 1e9; j++) {
+    i++;
+  }
+
+  alert("Done in " + (Date.now() - start) + 'ms');
+}
+
+count();
+```
+
+给浏览器渲染提供喘息的机会
+
+```markup
+<div id="progress"></div>
+
+<script>
+  let i = 0;
+
+  function count() {
+
+    // do a piece of the heavy job (*)
+    do {
+      i++;
+      progress.innerHTML = i;
+    } while (i % 1e3 != 0);
+
+    if (i < 1e9) {
+      setTimeout(count, 0);
+    }
+
+  }
+
+  count();
+</script>
+```
+
+## 6.9 Decorators and forwarding, call/apply
+
+### 缓存装饰器
+
+如果一个函数负载比较重，但是结果是稳定的，对于相同的输入，总是返回相同的结果的话，就可以缓存这些结果。创建一个装饰器。
+
+```js
+function slow(x) {
+  // 这里可能会有重负载的CPU密集型工作
+  alert(`Called with ${x}`);
+  return x;
+}
+
+function cachingDecorator(func) {
+  let cache = new Map();
+
+  return function(x) {
+    if (cache.has(x)) { // 如果结果在 map 里
+      return cache.get(x); // 返回它
+    }
+
+    let result = func(x); // 否则就调用函数
+
+    cache.set(x, result); // 然后把结果缓存起来
+    return result;
+  };
+}
+
+slow = cachingDecorator(slow);
+
+alert( slow(1) ); // slow(1) 被缓存起来了
+alert( "Again: " + slow(1) ); // 一样的
+
+alert( slow(2) ); // slow(2) 被缓存起来了
+alert( "Again: " + slow(2) ); // 也是一样
+```
+
+在上面的代码中，`cachingDecorator` 是一个**装饰器**：一个特殊的函数，它接受另一个函数并改变它的行为。
+
+把缓存写在外面的装饰器的好处：
+
+- `cachingDecorator` 可以被重用，应用于其它函数。
+- 缓存的逻辑是分开的，没有增加 `slow` 函数本身的复杂度。
+- 如果需要，可以绑定多个装饰器
+
+### Using “func.call” for the context
+
+如果是对象中的方法，就需要绑定上下文了。
+
+```javascript
+func.call(context, arg1, arg2, ...)
+```
+
+```javascript
+let worker = {
+  someMethod() {
+    return 1;
+  },
+
+  slow(x) {
+    alert("Called with " + x);
+    return x * this.someMethod(); // (*)
+  }
+};
+
+function cachingDecorator(func) {
+  let cache = new Map();
+  return function(x) {
+    if (cache.has(x)) {
+      return cache.get(x);
+    }
+    let result = func.call(this, x); // "this" is passed correctly now
+    cache.set(x, result);
+    return result;
+  };
+}
+
+worker.slow = cachingDecorator(worker.slow); // now make it caching
+
+alert( worker.slow(2) ); // works
+alert( worker.slow(2) ); // works, doesn't call the original (cached)
+```
+
+this 是怎么传递的：
+
+1. 在装饰器过后， `worker.slow` 现在是 wrapper `function (x) { ... }`。
+2. 当  `worker.slow(2)` 执行的时候，wrapper 接受 2 作为参数， 然后  `this=worker` （点前面的对象）
+3. 在 wrapper 内部，如果没有被缓存过，则 `func.call(this, x)` 将当前的 `this`(`=worker`) 和当前的参数 (`=2`) 传递给原始函数。
+
+### Going multi-argument with “func.apply”
+
+如果是多参数怎么办呢，首先需要解决的如何缓存多参数/双参数
+
+1. 实现一个新的类似map的数据结构（或使用第三方库），更加通用，能够允许多键。
+2. 使用嵌套 map，如 `cache.get(min).get(max)`。
+3. 把两个值合成一个。在这个例子中可以直接使用字符串  `"min,max"` 作为 `Map` 的键。为了灵活性，我们可以允许为装饰器提供**散列函数**，它知道如何从多个中创建一个值。
+
+这里使用第三种方法。
+
+下一个问题是如何将多参数传递给`func`。
+
+```javascript
+func.apply(context, args)
+```
+
+使用展开运算符的话，call 和 apply 就都可以实现了：
+
+```javascript
+let args = [1, 2, 3];
+
+func.call(context, ...args); // pass an array as list with spread operator
+func.apply(context, args);   // is same as using apply
+```
+
+但二者还是有区别的：
+
+- 展开运算符 `…` 允许传递可迭代的 `args` 给 `call`。
+- `apply` 只能接受类数组 `args`
+
+`apply` 最重要的用途之一是将调用传递给另一个函数，如下所示：
+
+```js
+let wrapper = function() {
+  return anotherFunction.apply(this, arguments);
+};
+```
+
+```javascript
+let worker = {
+  slow(min, max) {
+    alert(`Called with ${min},${max}`);
+    return min + max;
+  }
+};
+
+function cachingDecorator(func, hash) {
+  let cache = new Map();
+  return function() {
+    let key = hash(arguments); // (*)
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+
+    let result = func.apply(this, arguments); // (**)
+
+    cache.set(key, result);
+    return result;
+  };
+}
+
+function hash(args) {
+  return args[0] + ',' + args[1];
+}
+
+worker.slow = cachingDecorator(worker.slow, hash);
+
+alert( worker.slow(3, 5) ); // works
+alert( "Again " + worker.slow(3, 5) ); // same (cached)
+```
+
+### Borrowing a method
+
+如果是多参数怎么办呢，传进去的 arguments 是伪数组，不能直接调用 join，所以需要借用一下
+
+```javascript
+function hash() {
+  alert( [].join.call(arguments) ); // 1,2
+}
+
+hash(1, 2);
+```
+
+The trick is called *method borrowing*.
+
+需要注意的一点是如果原函数有自己的属性，那么装饰器则不会提供。
+
+### 任务
+
+#### Delaying decorator
+
+```javascript
+function delay(f, ms) {
+
+  return function() {
+    setTimeout(() => f.apply(this, arguments), ms);
+  };
+
+}
+```
+
+如果不用箭头函数，要事先提取出参数和 this：
+
+```javascript
+function delay(f, ms) {
+
+  // added variables to pass this and arguments from the wrapper inside setTimeout
+  return function(...args) {
+    let savedThis = this;
+    setTimeout(function() {
+      f.apply(savedThis, args);
+    }, ms);
+  };
+
+}
+```
+
+### Debounce decorator
+
+```javascript
+function debounce(f, ms) {
+
+  let isCooldown = false;
+
+  return function() {
+    if (isCooldown) return;
+
+    f.apply(this, arguments);
+
+    isCooldown = true;
+
+    setTimeout(() => isCooldown = false, ms);
+  };
+
+}
+```
+
+- `isCooldown = false` – ready to run.
+- `isCooldown = true` – waiting for the timeout.
+
+### Throttle decorator
+
+```javascript
+function throttle(func, ms) {
+
+  let isThrottled = false,
+    savedArgs,
+    savedThis;
+
+  function wrapper() {
+
+    if (isThrottled) { // (2)
+      savedArgs = arguments;
+      savedThis = this;
+      return;
+    }
+
+    func.apply(this, arguments); // (1)
+
+    isThrottled = true;
+
+    setTimeout(function() {
+      isThrottled = false; // (3)
+      if (savedArgs) {
+        wrapper.apply(savedThis, savedArgs);
+        savedArgs = savedThis = null;
+      }
+    }, ms);
+  }
+
+  return wrapper;
+}
+```
