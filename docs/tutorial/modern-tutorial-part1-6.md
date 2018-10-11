@@ -972,3 +972,224 @@ function throttle(func, ms) {
   return wrapper;
 }
 ```
+
+## 6.10 Function binding
+
+```javascript
+// more complex syntax will be little later
+let boundFunc = func.bind(context);
+```
+
+```javascript
+let user = {
+  firstName: "John"
+};
+
+function func() {
+  alert(this.firstName);
+}
+
+let funcUser = func.bind(user);
+funcUser(); // John
+```
+
+```javascript
+let user = {
+  firstName: "John",
+  say(phrase) {
+    alert(`${phrase}, ${this.firstName}!`);
+  }
+};
+
+let say = user.say.bind(user);
+
+say("Hello"); // Hello, John ("Hello" argument is passed to say)
+say("Bye"); // Bye, John ("Bye" is passed to say)
+```
+
+bindAll：
+
+```javascript
+for (let key in user) {
+  if (typeof user[key] == 'function') {
+    user[key] = user[key].bind(user);
+  }
+}
+```
+
+不能被重复绑定：
+
+```javascript
+function f() {
+  alert(this.name);
+}
+
+f = f.bind( {name: "John"} ).bind( {name: "Pete"} );
+
+f(); // John
+```
+
+## 6.11 Currying and partials
+
+bind的完整语法：
+
+```j&#39;s
+let bound = func.bind(context, arg1, arg2, ...);
+```
+
+partial function application - 偏函数应用：创建一个新的函数，覆盖一些已知的参数
+
+如果不想绑定上下文，只修改参数的话：
+
+```javascript
+function partial(func, ...argsBound) {
+  return function(...args) { // (*)
+    return func.call(this, ...argsBound, ...args);
+  }
+}
+```
+
+```javascript
+// Usage:
+let user = {
+  firstName: "John",
+  say(time, phrase) {
+    alert(`[${time}] ${this.firstName}: ${phrase}!`);
+  }
+};
+
+// add a partial method that says something now by fixing the first argument
+user.sayNow = partial(user.say, new Date().getHours() + ':' + new Date().getMinutes());
+
+user.sayNow("Hello");
+// Something like:
+// [10:00] John: Hello!
+```
+
+Also there’s a ready [_.partial](https://lodash.com/docs#partial) implementation from lodash library.
+
+lodash的例子：
+
+```js
+function greet(greeting, name) {
+  return greeting + ' ' + name;
+}
+ 
+var sayHelloTo = _.partial(greet, 'hello');
+sayHelloTo('fred');
+// => 'hello fred'
+ 
+// Partially applied with placeholders.
+var greetFred = _.partial(greet, _, 'fred');
+greetFred('hi');
+// => 'hi fred'
+```
+
+### Currying
+
+[Currying](https://en.wikipedia.org/wiki/Currying) 是一项将一个调用形式为 `f(a, b, c)` 的函数转化为调用形式为 `f(a)(b)(c)` 的技术
+
+```javascript
+function curry(func) {
+  return function(a) {
+    return function(b) {
+      return func(a, b);
+    };
+  };
+}
+
+// usage
+function sum(a, b) {
+  return a + b;
+}
+
+let carriedSum = curry(sum);
+
+alert( carriedSum(1)(2) ); // 3
+```
+
+-  `curry(func)` 的结果是 wrapper `function(a)`。
+- 当像  `sum(1)` 一样被调用的时候，参数被保存在词法环境中，然后返回一个新的 wrapper  `function(b)`。
+- 然后 `sum(1)(2)` 最终调用  `function(b)` ，以2为参数，传递给原始的多参数 `sum`。
+
+lodash 的 [_.curry](https://lodash.com/docs#curry)会更复杂一些：
+
+```javascript
+function curry(f) {
+  return function(...args) {
+    // if args.length == f.length (as many arguments as f has),
+    //   then pass the call to f
+    // otherwise return a partial function that fixes args as first arguments
+  };
+}
+```
+
+lodash里的例子：
+
+```js
+var abc = function(a, b, c) {
+  return [a, b, c];
+};
+ 
+var curried = _.curry(abc);
+ 
+curried(1)(2)(3);
+// => [1, 2, 3]
+ 
+curried(1, 2)(3);
+// => [1, 2, 3]
+ 
+curried(1, 2, 3);
+// => [1, 2, 3]
+ 
+// Curried with placeholders.
+curried(1)(_, 3)(2);
+// => [1, 2, 3]
+```
+
+高级柯里化实现：
+
+```javascript
+function curry(func) {
+
+  return function curried(...args) {
+    if (args.length >= func.length) {
+      return func.apply(this, args);
+    } else {
+      return function(...args2) {
+        return curried.apply(this, args.concat(args2));
+      }
+    }
+  };
+
+}
+
+function sum(a, b, c) {
+  return a + b + c;
+}
+
+let curriedSum = curry(sum);
+
+// still callable normally
+alert( curriedSum(1, 2, 3) ); // 6
+
+// get the partial with curried(1) and call it with 2 other arguments
+alert( curriedSum(1)(2,3) ); // 6
+
+// full curried form
+alert( curriedSum(1)(2)(3) ); // 6
+```
+
+## 6.12 Arrow functions revisited
+
+There’s a subtle difference between an arrow function `=>` and a regular function called with `.bind(this)`:
+
+- `.bind(this)` creates a “bound version” of the function.
+- The arrow `=>` doesn’t create any binding. The function simply doesn’t have `this`. The lookup of `this` is made exactly the same way as a regular variable search: in the outer lexical environment.
+
+Arrow functions:
+
+- Do not have `this`.
+- Do not have `arguments`.
+- Can’t be called with `new`.
+- (They also don’t have `super`, but we didn’t study it. Will be in the chapter [Class inheritance, super](https://javascript.info/class-inheritance)).
